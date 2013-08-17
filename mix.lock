@@ -1,0 +1,2 @@
+[ "dynamic_compile": {:git, "git://github.com/JacobVorreuter/dynamic_compile.git", "6a165715178dae8ea1c72e6ef171b9fc3435badc", []},
+  "gpb": {:git, "git://github.com/azukiapp/gpb.git", "91c06a78f1f158efee0d1df4755bd05e2691590f", [{:branch, "fixing_compile_macosx"}]} ]
