@@ -16,7 +16,7 @@ defmodule Protobuf.Mixfile do
   # Returns the list of dependencies in the format:
   defp deps do
     [
-      { :gpb, github: "azukiapp/gpb", branch: "fixing_compile_macosx" },
+      { :gpb, github: "tomas-abrahamsson/gpb" },
     ]
   end
 end
