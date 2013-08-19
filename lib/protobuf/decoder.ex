@@ -56,7 +56,6 @@ defmodule Protobuf.Decoder do
   end
 
   def read_fixed(lenght, stream) do
-    IO.inspect({:read_fixed, lenght})
     << bytes :: [binary, size(lenght)], rest :: binary >> = stream
     { bytes, rest }
   end
