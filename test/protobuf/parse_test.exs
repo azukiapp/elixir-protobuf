@@ -21,4 +21,10 @@ defmodule Protobuf.Parse.Test do
     assert {:msg, :Msg} == msg
     assert {:enum, :"Msg.Type"} == elem(field, 4)
   end
+
+  test "force a record type" do
+    msg = "message Msg { required uint32 field1 = 1; }"
+    {:ok, [{_, [field]} | _]} = Parse.parse(msg, field: :my_filed_type)
+    assert :my_filed_type == elem(field, 0)
+  end
 end

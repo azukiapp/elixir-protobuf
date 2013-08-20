@@ -1,11 +1,23 @@
 defmodule Protobuf.Parse do
 
-  #defrecord :field, Record.extract(:field, from_lib: "gpb/include/gpb.hrl")
-
   def parse(msgs), do: parse(msgs, [])
 
   def parse(defs, options) when is_list(defs) do
-    :gpb_parse.post_process(defs, options)
+    {:ok, defs} = :gpb_parse.post_process(defs, options)
+
+    if type = Keyword.get(options, :field) do
+      defs = lc {msg, fields} inlist defs do
+        case msg do
+          {:msg, _} ->
+            {msg, lc field inlist fields do
+              delete_elem(field, 0) |> insert_elem(0, type)
+            end}
+          _ -> {msg, fields}
+        end
+      end
+    end
+
+    {:ok, defs}
   end
 
   def parse(string, options) do
