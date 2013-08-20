@@ -10,7 +10,7 @@ defmodule Protobuf.Decoder.Test do
       optional int32 idade   = 4;
       required string email  = 5;
     }", fn mod ->
-      msg = {:Msg, 500000, 2000, "João", 18, "joao@example.com"}
+      msg = {:Msg, 500000, 2000, "João", :undefined, "joao@example.com"}
       str = mod.encode_msg(msg)
 
       assert msg == Decoder.decode(str, :Msg)

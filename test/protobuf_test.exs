@@ -1,46 +1,82 @@
 defmodule ProtobufTest do
   use Protobuf.Case
 
-  test "auxiliar compile test function" do
-    Gpb.compile_tmp_proto %B[
-        message Msg1 {
-          required uint32 field1 = 1;
-        }
-
-        message Msg2 {
-          optional uint32 field1 = 1;
-        }
-
-        message Msg3 {
-          enum Type {
-            TYPE1 = 1;
-            TYPE2 = 2;
-            TYPE3 = 3;
-          }
-
-          message Msg4 {
-            required uint32 field1 = 1;
-          }
-
-          required Type field1 = 1;
-          optional Msg2 field2 = 2;
-          optional Msg4 field3 = 3;
-        }
-      ], fn mod ->
-
-      msgs = [
-        [{:Msg1, 10}, <<8, 10>>],
-        [{:Msg2, :undefined}, <<>>],
-        [{:Msg3, :TYPE1, :undefined, :undefined}, <<8, 1>>],
-        [{:Msg3, :TYPE2, {:Msg2, 10}, :undefined}, <<8, 2, 18, 2, 8, 10>>],
-        [{:Msg3, :TYPE3, {:Msg2, 10}, {:'Msg3.Msg4', 1}}, <<8, 3, 18, 2, 8, 10, 26, 2, 8, 1>>],
-      ]
-
-      Enum.each(msgs, fn [msg, encoded] ->
-        msg_name = elem(msg, 0)
-        assert encoded == mod.encode_msg(msg)
-        assert msg == mod.decode_msg(mod.encode_msg(msg), msg_name)
-      end)
+  defmacrop def_proto_module(value) do
+    quote do
+      {:module, mod, _, _} = defmodule mod_temp do
+        use Protobuf, unquote(value)
+      end; mod
     end
+  end
+
+  defp mod_temp(n // 1) do
+    mod_candidate = :"#{__MODULE__}.Test_#{n}"
+    case :code.is_loaded(mod_candidate) do
+      false -> mod_candidate
+      _ -> mod_temp(n + 1)
+    end
+  end
+
+  test "define records in namespace" do
+    mod = def_proto_module "
+       message Msg1 {
+         required uint32 f1 = 1;
+       }
+
+       message Msg2 {
+         required string f1 = 1;
+       }
+    "
+    msg = mod.Msg1.new(f1: 1)
+    assert is_record(msg, mod.Msg1)
+    assert 1 == msg.f1
+
+    msg = mod.Msg2.new(f1: "foo")
+    assert is_record(msg, mod.Msg2)
+    assert "foo" == msg.f1
+  end
+
+  test "define a record in subnamespace" do
+    mod = def_proto_module "
+      message Msg {
+        message SubMsg {
+          required uint32 f1 = 1;
+        }
+
+        required SubMsg f1 = 1;
+      }
+    "
+
+    msg = mod.Msg.SubMsg.new(f1: 1)
+    assert is_record(msg, mod.Msg.SubMsg)
+
+    msg = mod.Msg.new(f1: msg)
+    assert is_record(msg.f1, mod.Msg.SubMsg)
+  end
+
+  test "define enum information module" do
+    mod = def_proto_module "
+      enum Version {
+        V0_1 = 1;
+        V0_2 = 2;
+      }
+      message Msg {
+        enum MsgType {
+          START = 1;
+          STOP  = 2;
+        }
+        required MsgType type = 1;
+        required Version version = 1;
+      }
+    "
+
+    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Version)
+    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Msg.MsgType)
+
+    assert 1 == mod.Version.value(:V0_1)
+    assert 1 == mod.Msg.MsgType.value(:START)
+
+    assert :V0_2  == mod.Version.atom(2)
+    assert :STOP == mod.Msg.MsgType.atom(2)
   end
 end
