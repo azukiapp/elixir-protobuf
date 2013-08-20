@@ -3,8 +3,17 @@ defmodule Protobuf do
 
   defrecord Field, Record.extract(:field, from_lib: "gpb/include/gpb.hrl")
 
-  defmacro __using__(opts) when is_bitstring(opts) do
-    {:ok, msgs} = parse(opts, [field: Field])
+  defmacro __using__(opts) do
+    parse_and_generate(case opts do
+      << string :: binary >> -> string
+      from: file ->
+        {file, []} = Code.eval_quoted(file, [], __CALLER__)
+        File.read!(file)
+    end)
+  end
+
+  defp parse_and_generate(define, _opts // []) do
+    {:ok, msgs} = parse(define, [field: Field])
 
     lc {{item_type, item_name}, fields} inlist msgs do
       case item_type do

@@ -79,4 +79,13 @@ defmodule ProtobufTest do
     assert :V0_2  == mod.Version.atom(2)
     assert :STOP == mod.Msg.MsgType.atom(2)
   end
+
+  test "support to define from a file" do
+    defmodule ProtoFromFile do
+      use Protobuf, from: Path.expand("./proto/basic.proto", __DIR__)
+    end
+
+    basic = ProtoFromFile.Basic.new(f1: 1)
+    assert is_record(basic, ProtoFromFile.Basic)
+  end
 end
