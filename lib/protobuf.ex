@@ -1,5 +1,6 @@
 defmodule Protobuf do
   import Protobuf.Parse
+  alias Protobuf.Decoder
 
   defrecord Field, Record.extract(:field, from_lib: "gpb/include/gpb.hrl")
 
@@ -15,24 +16,68 @@ defmodule Protobuf do
   defp parse_and_generate(define, _opts // []) do
     {:ok, msgs} = parse(define, [field: Field])
 
-    lc {{item_type, item_name}, fields} inlist msgs do
+    quotes = lc {{item_type, item_name}, fields} inlist msgs do
       case item_type do
-        :msg  -> record(item_name, fields)
-        :enum -> enum_mod(item_name, fields)
+        :msg  -> message(item_name, fields)
+        :enum -> enum(item_name, fields)
+      end
+    end
+
+    quotes ++ [quote do
+      def defs do
+        unquote(Macro.escape(msgs, unquote: true))
+      end
+    end]
+  end
+
+  defp message(name, fields) do
+    contents = lc Field[fnum: fnum, occurrence: occurrence] inlist fields do
+      extra_content = case occurrence do
+        :repeated -> quote do
+          value = (elem(record, unquote(fnum)) || []) ++ [value]
+        end
+        _ -> []
+      end
+      quote do
+        def update_by_index(unquote(fnum), value, record) do
+          unquote(extra_content)
+          set_elem(record, unquote(fnum), value)
+        end
+      end
+    end
+
+    contents = contents ++ [quote do
+      def update_by_index(_, _, record), do: record
+    end]
+
+    fields = lc Field[name: name, occurrence: occurrence] inlist fields do
+      {name, case occurrence do
+        :repeated -> []
+        _ -> nil
+      end}
+    end
+
+    quote do
+      main_module = __MODULE__
+      defrecord :"#{__MODULE__}.#{unquote(name)}", unquote(fields) do
+        @main_module main_module
+        def defs do
+          @main_module.defs
+        end
+
+        def defs(_) do
+          @main_module.defs
+        end
+
+        def decode(data), do: Decoder.decode(data, new)
+        def decode_from(data, record), do: Decoder.decode(data, record)
+
+        unquote(contents)
       end
     end
   end
 
-  defp record(record_name, fields) do
-    fields = lc Field[name: name] inlist fields do
-      {name, :undefined}
-    end
-    quote do
-      defrecord :"#{__MODULE__}.#{unquote(record_name)}", unquote(fields)
-    end
-  end
-
-  defp enum_mod(enum_name, values) do
+  defp enum(name, values) do
     contents = lc {atom, value} inlist values do
       quote do
         def value(unquote(atom)), do: unquote(value)
@@ -40,7 +85,7 @@ defmodule Protobuf do
       end
     end
     quote do
-      defmodule :"#{__MODULE__}.#{unquote(enum_name)}" do
+      defmodule :"#{__MODULE__}.#{unquote(name)}" do
         unquote(contents)
       end
     end

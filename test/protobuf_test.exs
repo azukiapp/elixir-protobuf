@@ -1,22 +1,6 @@
 defmodule ProtobufTest do
   use Protobuf.Case
 
-  defmacrop def_proto_module(value) do
-    quote do
-      {:module, mod, _, _} = defmodule mod_temp do
-        use Protobuf, unquote(value)
-      end; mod
-    end
-  end
-
-  defp mod_temp(n // 1) do
-    mod_candidate = :"#{__MODULE__}.Test_#{n}"
-    case :code.is_loaded(mod_candidate) do
-      false -> mod_candidate
-      _ -> mod_temp(n + 1)
-    end
-  end
-
   test "define records in namespace" do
     mod = def_proto_module "
        message Msg1 {
@@ -34,6 +18,18 @@ defmodule ProtobufTest do
     msg = mod.Msg2.new(f1: "foo")
     assert is_record(msg, mod.Msg2)
     assert "foo" == msg.f1
+  end
+
+  test "set default value for nil is optional" do
+    mod = def_proto_module "message Msg { optional uint32 f1 = 1; }"
+    msg = mod.Msg.new()
+    assert nil == msg.f1
+  end
+
+  test "set default value for [] is repeated" do
+    mod = def_proto_module "message Msg { repeated uint32 f1 = 1; }"
+    msg = mod.Msg.new()
+    assert [] == msg.f1
   end
 
   test "define a record in subnamespace" do
@@ -87,5 +83,19 @@ defmodule ProtobufTest do
 
     basic = ProtoFromFile.Basic.new(f1: 1)
     assert is_record(basic, ProtoFromFile.Basic)
+  end
+
+  test "set a method proto to get proto defs" do
+    mod  = def_proto_module "message Msg { optional uint32 f1 = 1; }"
+    defs = [{{:msg, :Msg}, [{Protobuf.Field, :f1, 1, 2, :uint32, :optional, []}]}]
+    assert defs == mod.defs
+    assert defs == mod.Msg.defs
+    assert defs == mod.Msg.new.defs
+  end
+
+  test "implement method decode" do
+    mod = def_proto_module "message Msg { optional uint32 f1 = 1; }"
+    assert is_record(mod.Msg.decode(<<>>), mod.Msg)
+    assert is_record(mod.Msg.new.decode_from(<<>>), mod.Msg)
   end
 end
