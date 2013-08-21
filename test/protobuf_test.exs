@@ -98,4 +98,18 @@ defmodule ProtobufTest do
     assert is_record(mod.Msg.decode(<<>>), mod.Msg)
     assert is_record(mod.Msg.new.decode_from(<<>>), mod.Msg)
   end
+
+  test "convert to atom update values of type enum" do
+    mod = def_proto_module "message Msg {
+      enum Type {
+        V0 = 0;
+        V2 = 1;
+      }
+
+      required Type f1 = 1;
+    }"
+
+    msg = mod.Msg.new.update_by_index(1, 0)
+    assert {mod.Msg, :V0} == msg
+  end
 end

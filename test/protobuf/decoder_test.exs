@@ -38,6 +38,19 @@ defmodule Protobuf.Decoder.Test do
     assert {mod.M1, [150, 151]} == D.decode(<<8, 150, 1, 8, 151, 1>>, mod.M1)
   end
 
+  test "decode msg with enum field" do
+    mod = def_proto_module "message M1 {
+      enum e {
+        v1 = 100;
+        v2 = 150;
+      }
+
+      required e f1 = 1;
+    }"
+
+    assert {mod.M1, :v2} == D.decode(<<8,150,1>>, mod.M1)
+  end
+
   #test :read_variant do
     #Gpb.compile_tmp_proto "message Msg {
       #required uint32 field1 = 1;

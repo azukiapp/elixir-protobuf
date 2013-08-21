@@ -31,35 +31,10 @@ defmodule Protobuf do
   end
 
   defp message(name, fields) do
-    contents = lc Field[fnum: fnum, occurrence: occurrence] inlist fields do
-      extra_content = case occurrence do
-        :repeated -> quote do
-          value = (elem(record, unquote(fnum)) || []) ++ [value]
-        end
-        _ -> []
-      end
-      quote do
-        def update_by_index(unquote(fnum), value, record) do
-          unquote(extra_content)
-          set_elem(record, unquote(fnum), value)
-        end
-      end
-    end
-
-    contents = contents ++ [quote do
-      def update_by_index(_, _, record), do: record
-    end]
-
-    fields = lc Field[name: name, occurrence: occurrence] inlist fields do
-      {name, case occurrence do
-        :repeated -> []
-        _ -> nil
-      end}
-    end
-
     quote do
       main_module = __MODULE__
-      defrecord :"#{__MODULE__}.#{unquote(name)}", unquote(fields) do
+      fields = unquote(record_fields(fields))
+      defrecord :"#{__MODULE__}.#{unquote(name)}", fields do
         @main_module main_module
         def defs do
           @main_module.defs
@@ -72,9 +47,53 @@ defmodule Protobuf do
         def decode(data), do: Decoder.decode(data, new)
         def decode_from(data, record), do: Decoder.decode(data, record)
 
-        unquote(contents)
+        unquote(fields_methods(fields))
       end
     end
+  end
+
+  defp record_fields(fields) do
+    lc Field[name: name, occurrence: occurrence] inlist fields do
+      {name, case occurrence do
+        :repeated -> []
+        _ -> nil
+      end}
+    end
+  end
+
+  defp fields_methods(fields) do
+    contents = lc Field[name: name, rnum: rnum, occurrence: occurrence] inlist fields do
+      index = rnum - 1
+      extra_content = []
+      if occurrence == :repeated do
+        extra_content = quote do
+          value = (elem(record, unquote(index)) || []) ++ [value]
+        end
+      end
+      quote do
+        def update_by_index(unquote(index), value, record) do
+          unquote(extra_content)
+          :erlang.apply(record, unquote(name), [value])
+        end
+      end
+    end
+
+    contents = contents ++ lc Field[name: name, type: {:enum, mod}] inlist fields do
+      quote do
+        defoverridable [{unquote(name), 2}]
+        def unquote(name)(value, record) when is_atom(value) do
+          super(value, record)
+        end
+
+        def unquote(name)(value, record) do
+          unquote(name)(:"#{@main_module}.#{unquote(mod)}".atom(value), record)
+        end
+      end
+    end
+
+    contents ++ [quote do
+      def update_by_index(_, _, record), do: record
+    end]
   end
 
   defp enum(name, values) do
