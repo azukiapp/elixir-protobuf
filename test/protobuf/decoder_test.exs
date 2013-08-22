@@ -67,7 +67,7 @@ defmodule Protobuf.Decoder.Test do
 
       message SubMsgTest {
         message MsgTest {
-          required uint32 f1 = 1;
+          required int32 f1 = 1;
         }
         required MsgTest f1 = 1;
       }
@@ -76,63 +76,73 @@ defmodule Protobuf.Decoder.Test do
         optional SubMsgTest f1 = 1;
       }
 
-      message ZeroInstancePackedTest {
-        repeated int32 f1 = 1;
+      message PackedTest {
+        repeated int32 f1 = 4 [packed=true];
       }
     ")}
   end
 
-  test "decode msg with enum field", vars do
-    mod = vars[:mod]
+  test "decode msg with enum field", var do
+    mod = var[:mod]
     assert {mod.EnumTest, :v1} == D.decode(<<8,150,1>>, mod.EnumTest)
   end
 
-  test "decode msg with negative enum value", vars do
-    mod = vars[:mod]
+  test "decode msg with negative enum value", var do
+    mod = var[:mod]
     assert {mod.EnumTest, :v2} == D.decode(<<8,254,255,255,255,15>>, mod.EnumTest)
   end
 
-  test "decode msg with bool field", vars do
-    mod = vars[:mod]
+  test "decode msg with bool field", var do
+    mod = var[:mod]
     assert {mod.BoolTest, true }  == D.decode(<<8,1>>, mod.BoolTest)
     assert {mod.BoolTest, false}  == D.decode(<<8,0>>, mod.BoolTest)
   end
 
-  test "decode msg with float field", vars do
-    mod = vars[:mod].FloatTest
+  test "decode msg with float field", var do
+    mod = var[:mod].FloatTest
     assert {mod, 1.125} == D.decode(<<13,0,0,144,63>>, mod)
   end
 
-  test "decode msg with double field", vars do
-    mod = vars[:mod].DoudleTest
+  test "decode msg with double field", var do
+    mod = var[:mod].DoudleTest
     assert {mod, 1.125} == D.decode(<<9,0,0,0,0,0,0,242,63>>, mod)
   end
 
-  test "decode msg with string field", vars do
-    mod  = vars[:mod].StringTest
+  test "decode msg with string field", var do
+    mod  = var[:mod].StringTest
     data = <<10,11,?a,?b,?c,?\303,?\245,?\303,?\244,?\303,?\266,?\317,?\276>>
     assert {mod, "abcåäöϾ"} == D.decode(data, mod)
   end
 
-  test "decode msg with bytes field", vars do
-    mod  = vars[:mod].BytesTest
+  test "decode msg with bytes field", var do
+    mod  = var[:mod].BytesTest
     assert {mod, <<0,0,0,0>>} == D.decode(<<10,4,0,0,0,0>>, mod)
   end
 
-  test "decode msg with sub msg field", vars do
-    mod  = vars[:mod]
+  test "decode msg with sub msg field", var do
+    mod  = var[:mod]
     msg  = {mod.SubMsgTest, {mod.SubMsgTest.MsgTest, 150}}
     assert msg == D.decode(<<10,3, 8,150,1>>, mod.SubMsgTest)
   end
 
-  test "decode msg with optional nonpresent sub msg field", vars do
-    mod  = vars[:mod]
+  test "decode msg with optional nonpresent sub msg field", var do
+    mod  = var[:mod]
     msg  = {mod.SubOptionalMsgTest, nil}
     assert msg == D.decode(<<>>, mod.SubOptionalMsgTest)
   end
 
-  test "decode zero instances of packed variants", vars do
-    rmsg = vars[:mod].ZeroInstancePackedTest
+  test "decode zero instances of packed variants", var do
+    rmsg = var[:mod].PackedTest
     assert {rmsg, []} == D.decode(<<>>, rmsg)
+  end
+
+  test "decode one packed chunck of varints", var do
+    rmsg  = var[:mod].PackedTest
+    bytes = <<0x22,               # tag (field number 4, wire type 2)
+              0x06,               # payload size (6 bytes)
+              0x03,               # first element (varint 3)
+              0x8E, 0x02,         # second element (varint 270)
+              0x9E, 0xA7, 0x05>>  # third element (varint 86942)
+    assert {rmsg, [3, 270, 86942]} == D.decode(bytes, rmsg)
   end
 end
