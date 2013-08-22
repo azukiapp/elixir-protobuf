@@ -55,4 +55,13 @@ defmodule Protobuf.Decoder.Test do
 
     assert {mod.M1, :v2} == D.decode(<<8,254,255,255,255,15>>, mod.M1)
   end
+
+  test "decode msg with bool field" do
+    mod = def_proto_module "message M1 {
+      required bool f1 = 1;
+    }"
+
+    assert {mod.M1, true }  == D.decode(<<8,1>>, mod.M1)
+    assert {mod.M1, false}  == D.decode(<<8,0>>, mod.M1)
+  end
 end

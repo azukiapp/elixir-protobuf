@@ -56,6 +56,8 @@ defmodule Protobuf.Decoder do
       :int32 ->
         << data :: [signed, size(32)] >> = << data :: 32 >>
         data
+      :bool ->
+        data == 1
       _ -> data
     end
   end
