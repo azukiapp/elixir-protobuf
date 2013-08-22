@@ -14,7 +14,7 @@ defmodule Protobuf do
   end
 
   defp parse_and_generate(ns, define, _opts // []) do
-    {:ok, msgs} = parse(define)
+    msgs = parse!(define)
 
     # Fixing namespaces
     msgs = fix_defs_ns(msgs, ns)
