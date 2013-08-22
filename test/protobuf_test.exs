@@ -62,7 +62,7 @@ defmodule ProtobufTest do
           STOP  = 2;
         }
         required MsgType type = 1;
-        required Version version = 1;
+        required Version version = 2;
       }
     "
 
@@ -74,6 +74,9 @@ defmodule ProtobufTest do
 
     assert :V0_2  == mod.Version.atom(2)
     assert :STOP == mod.Msg.MsgType.atom(2)
+
+    assert nil == mod.Version.atom(-1)
+    assert nil == mod.Msg.MsgType.value(:OTHER)
   end
 
   test "support to define from a file" do
@@ -85,15 +88,22 @@ defmodule ProtobufTest do
     assert is_record(basic, ProtoFromFile.Basic)
   end
 
-  test "set a method proto to get proto defs" do
+  test "define a method to get proto defs" do
     mod  = def_proto_module "message Msg { optional uint32 f1 = 1; }"
-    defs = [{{:msg, :Msg}, [{Protobuf.Field, :f1, 1, 2, :uint32, :optional, []}]}]
+    defs = [{{:msg, mod.Msg}, [{:field, :f1, 1, 2, :uint32, :optional, []}]}]
     assert defs == mod.defs
     assert defs == mod.Msg.defs
     assert defs == mod.Msg.new.defs
   end
 
-  test "implement method decode" do
+  test "defined a method defs to get field info" do
+    mod  = def_proto_module "message Msg { optional uint32 f1 = 1; }"
+    deff = {:field, :f1, 1, 2, :uint32, :optional, []}
+    assert deff == mod.Msg.defs(:field, 1)
+    assert deff == mod.Msg.defs(:field, :f1)
+  end
+
+  test "defined method decode" do
     mod = def_proto_module "message Msg { optional uint32 f1 = 1; }"
     assert is_record(mod.Msg.decode(<<>>), mod.Msg)
     assert is_record(mod.Msg.new.decode_from(<<>>), mod.Msg)
@@ -109,7 +119,29 @@ defmodule ProtobufTest do
       required Type f1 = 1;
     }"
 
-    msg = mod.Msg.new.update_by_index(1, 0)
+    msg = mod.Msg.new.update_by_tag(1, 0)
     assert {mod.Msg, :V0} == msg
+  end
+
+  test "define method update_by_tag" do
+    mod = def_proto_module "message Msg {
+      optional uint32 f1 = 1;
+      required uint32 f2 = 2;
+    }"
+
+    record = mod.Msg.new()
+    record = record.update_by_tag(2, 10)
+    assert {mod.Msg, nil, 10} == record
+  end
+
+  test "make a accumulate field if occurrence is repeated" do
+    mod = def_proto_module "message Msg {
+      repeated uint32 f1 = 1;
+    }"
+
+    record = mod.Msg.new()
+    assert {mod.Msg, []}         == record
+    assert {mod.Msg, [150]}      == record.update_by_tag(1, 150)
+    assert {mod.Msg, [150, 151]} == record.update_by_tag(1, [150, 151])
   end
 end
