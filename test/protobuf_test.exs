@@ -107,4 +107,15 @@ defmodule ProtobufTest do
     mod = def_proto_module "message Msg { optional uint32 f1 = 1; }"
     assert is_record(mod.Msg.decode(<<>>), mod.Msg)
   end
+
+  test "extensions skip" do
+    mod = def_proto_module "
+      message Msg {
+        required uint32 f1 = 1;
+        extensions 100 to 200;
+      }
+    "
+
+    assert is_record(mod.Msg.new, mod.Msg)
+  end
 end

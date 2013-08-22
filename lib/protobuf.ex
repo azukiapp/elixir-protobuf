@@ -25,6 +25,8 @@ defmodule Protobuf do
       case item_type do
         :msg  -> message(item_name, fields)
         :enum -> enum(item_name, fields)
+        # Skips any
+        _ -> []
       end
     end
 
