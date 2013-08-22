@@ -47,6 +47,10 @@ defmodule Protobuf.Decoder do
     decode_field(data, :int32)
   end
 
+  defp decode_field(data, :field[type: {:msg, ns}]) do
+    decode(data, ns)
+  end
+
   defp decode_field(data, :field[type: type]) do
     decode_field(data, type)
   end
@@ -58,6 +62,14 @@ defmodule Protobuf.Decoder do
         data
       :bool ->
         data == 1
+      :float ->
+        << data :: [little, float, size(32)] >> = data
+        data
+      :double ->
+        << data :: [little, float, size(64)] >> = data
+        data
+        #<<N:32/little-float, Rest/binary>> = Bin,
+        #{N, Rest}
       _ -> data
     end
   end

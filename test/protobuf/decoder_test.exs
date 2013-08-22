@@ -48,6 +48,37 @@ defmodule Protobuf.Decoder.Test do
       message BoolTest {
         required bool f1 = 1;
       }
+
+      message FloatTest {
+        required float f1 = 1;
+      }
+
+      message DoudleTest {
+        required double f1 = 1;
+      }
+
+      message StringTest {
+        required string f1 = 1;
+      }
+
+      message BytesTest {
+        required bytes f1 = 1;
+      }
+
+      message SubMsgTest {
+        message MsgTest {
+          required uint32 f1 = 1;
+        }
+        required MsgTest f1 = 1;
+      }
+
+      message SubOptionalMsgTest {
+        optional SubMsgTest f1 = 1;
+      }
+
+      message ZeroInstancePackedTest {
+        repeated int32 f1 = 1;
+      }
     ")}
   end
 
@@ -67,7 +98,41 @@ defmodule Protobuf.Decoder.Test do
     assert {mod.BoolTest, false}  == D.decode(<<8,0>>, mod.BoolTest)
   end
 
-  #test "decode msg with float field" do
-    #mod =
-  #end
+  test "decode msg with float field", vars do
+    mod = vars[:mod].FloatTest
+    assert {mod, 1.125} == D.decode(<<13,0,0,144,63>>, mod)
+  end
+
+  test "decode msg with double field", vars do
+    mod = vars[:mod].DoudleTest
+    assert {mod, 1.125} == D.decode(<<9,0,0,0,0,0,0,242,63>>, mod)
+  end
+
+  test "decode msg with string field", vars do
+    mod  = vars[:mod].StringTest
+    data = <<10,11,?a,?b,?c,?\303,?\245,?\303,?\244,?\303,?\266,?\317,?\276>>
+    assert {mod, "abcåäöϾ"} == D.decode(data, mod)
+  end
+
+  test "decode msg with bytes field", vars do
+    mod  = vars[:mod].BytesTest
+    assert {mod, <<0,0,0,0>>} == D.decode(<<10,4,0,0,0,0>>, mod)
+  end
+
+  test "decode msg with sub msg field", vars do
+    mod  = vars[:mod]
+    msg  = {mod.SubMsgTest, {mod.SubMsgTest.MsgTest, 150}}
+    assert msg == D.decode(<<10,3, 8,150,1>>, mod.SubMsgTest)
+  end
+
+  test "decode msg with optional nonpresent sub msg field", vars do
+    mod  = vars[:mod]
+    msg  = {mod.SubOptionalMsgTest, nil}
+    assert msg == D.decode(<<>>, mod.SubOptionalMsgTest)
+  end
+
+  test "decode zero instances of packed variants", vars do
+    rmsg = vars[:mod].ZeroInstancePackedTest
+    assert {rmsg, []} == D.decode(<<>>, rmsg)
+  end
 end
