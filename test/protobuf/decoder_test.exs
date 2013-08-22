@@ -38,30 +38,36 @@ defmodule Protobuf.Decoder.Test do
     assert {mod.M1, [150, 151]} == D.decode(<<8, 150, 1, 8, 151, 1>>, mod.M1)
   end
 
-  test "decode msg with enum field" do
-    mod = def_proto_module "message M1 {
-      enum e { v1 = 100; v2 = 150; }
-      required e f1 = 1;
-    }"
+  setup_all do
+    { :ok, mod: def_proto_module("
+      message EnumTest {
+        enum e { v1 = 150; v2 = -2; }
+        required e f1 = 1;
+      }
 
-    assert {mod.M1, :v2} == D.decode(<<8,150,1>>, mod.M1)
+      message BoolTest {
+        required bool f1 = 1;
+      }
+    ")}
   end
 
-  test "decode msg with negative enum value" do
-    mod = def_proto_module "message M1 {
-      enum e { v1 = 100; v2 = -2; }
-      required e f1 = 1;
-    }"
-
-    assert {mod.M1, :v2} == D.decode(<<8,254,255,255,255,15>>, mod.M1)
+  test "decode msg with enum field", vars do
+    mod = vars[:mod]
+    assert {mod.EnumTest, :v1} == D.decode(<<8,150,1>>, mod.EnumTest)
   end
 
-  test "decode msg with bool field" do
-    mod = def_proto_module "message M1 {
-      required bool f1 = 1;
-    }"
-
-    assert {mod.M1, true }  == D.decode(<<8,1>>, mod.M1)
-    assert {mod.M1, false}  == D.decode(<<8,0>>, mod.M1)
+  test "decode msg with negative enum value", vars do
+    mod = vars[:mod]
+    assert {mod.EnumTest, :v2} == D.decode(<<8,254,255,255,255,15>>, mod.EnumTest)
   end
+
+  test "decode msg with bool field", vars do
+    mod = vars[:mod]
+    assert {mod.BoolTest, true }  == D.decode(<<8,1>>, mod.BoolTest)
+    assert {mod.BoolTest, false}  == D.decode(<<8,0>>, mod.BoolTest)
+  end
+
+  #test "decode msg with float field" do
+    #mod =
+  #end
 end
