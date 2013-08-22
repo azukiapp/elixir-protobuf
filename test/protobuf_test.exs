@@ -106,42 +106,5 @@ defmodule ProtobufTest do
   test "defined method decode" do
     mod = def_proto_module "message Msg { optional uint32 f1 = 1; }"
     assert is_record(mod.Msg.decode(<<>>), mod.Msg)
-    assert is_record(mod.Msg.new.decode_from(<<>>), mod.Msg)
-  end
-
-  test "convert to atom update values of type enum" do
-    mod = def_proto_module "message Msg {
-      enum Type {
-        V0 = 0;
-        V2 = 1;
-      }
-
-      required Type f1 = 1;
-    }"
-
-    msg = mod.Msg.new.update_by_tag(1, 0)
-    assert {mod.Msg, :V0} == msg
-  end
-
-  test "define method update_by_tag" do
-    mod = def_proto_module "message Msg {
-      optional uint32 f1 = 1;
-      required uint32 f2 = 2;
-    }"
-
-    record = mod.Msg.new()
-    record = record.update_by_tag(2, 10)
-    assert {mod.Msg, nil, 10} == record
-  end
-
-  test "make a accumulate field if occurrence is repeated" do
-    mod = def_proto_module "message Msg {
-      repeated uint32 f1 = 1;
-    }"
-
-    record = mod.Msg.new()
-    assert {mod.Msg, []}         == record
-    assert {mod.Msg, [150]}      == record.update_by_tag(1, 150)
-    assert {mod.Msg, [150, 151]} == record.update_by_tag(1, [150, 151])
   end
 end

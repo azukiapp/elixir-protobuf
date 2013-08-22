@@ -1,6 +1,8 @@
 defmodule Protobuf do
   import Protobuf.Parse
+
   alias Protobuf.Decoder
+  alias Protobuf.Encoder
 
   defrecord :field, Record.extract(:field, from_lib: "gpb/include/gpb.hrl")
 
@@ -40,8 +42,11 @@ defmodule Protobuf do
       defrecord unquote(name), fields do
         @main_module main_module
 
-        def decode(data), do: Decoder.decode(data, new)
-        def decode_from(data, record), do: Decoder.decode(data, record)
+        def decode(data), do: Decoder.decode(data, __MODULE__)
+
+        def encode(unquote(name)[] = record) do
+          Encoder.encode(record, defs)
+        end
 
         unquote(fields_methods(fields))
 
@@ -69,44 +74,12 @@ defmodule Protobuf do
   end
 
   defp fields_methods(fields) do
-    contents = lc :field[name: name, rnum: rnum, fnum: fnum, occurrence: occurrence] = field inlist fields do
-      extra_content = []
-      if occurrence == :repeated do
-        extra_content = quote do
-          unless is_list(value) do
-            value = (elem(record, unquote(rnum - 1)) || []) ++ [value]
-          end
-        end
-      end
+    lc :field[name: name, fnum: fnum] = field inlist fields do
       quote do
-        def update_by_tag(unquote(fnum), value, record) do
-          unquote(extra_content)
-          :erlang.apply(record, unquote(name), [value])
-        end
-
         def defs(:field, unquote(fnum)), do: unquote(Macro.escape(field))
         def defs(:field, unquote(name)), do: defs(:field, unquote(fnum))
       end
     end
-
-    #IO.puts(Macro.to_string(contents))
-
-    contents = contents ++ lc :field[name: name, type: {:enum, mod}] inlist fields do
-      quote do
-        defoverridable [{unquote(name), 2}]
-        def unquote(name)(value, record) when is_atom(value) do
-          super(value, record)
-        end
-
-        def unquote(name)(value, record) do
-          unquote(name)(unquote(mod).atom(value), record)
-        end
-      end
-    end
-
-    contents ++ [quote do
-      def update_by_tag(_, _, record), do: record
-    end]
   end
 
   defp enum(name, values) do
