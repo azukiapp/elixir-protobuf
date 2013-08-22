@@ -40,29 +40,19 @@ defmodule Protobuf.Decoder.Test do
 
   test "decode msg with enum field" do
     mod = def_proto_module "message M1 {
-      enum e {
-        v1 = 100;
-        v2 = 150;
-      }
-
+      enum e { v1 = 100; v2 = 150; }
       required e f1 = 1;
     }"
 
     assert {mod.M1, :v2} == D.decode(<<8,150,1>>, mod.M1)
   end
 
-  #test :read_variant do
-    #Gpb.compile_tmp_proto "message Msg {
-      #required uint32 field1 = 1;
-      #required int64  field2 = 2;
-      #required string name   = 3;
-      #optional int32 idade   = 4;
-      #required string email  = 5;
-    #}", fn mod ->
-      #msg = {:Msg, 500000, 2000, "João", :undefined, "joao@example.com"}
-      #str = mod.encode_msg(msg)
+  test "decode msg with negative enum value" do
+    mod = def_proto_module "message M1 {
+      enum e { v1 = 100; v2 = -2; }
+      required e f1 = 1;
+    }"
 
-      #assert msg == Decoder.decode(str, :Msg)
-    #end
-  #end
+    assert {mod.M1, :v2} == D.decode(<<8,254,255,255,255,15>>, mod.M1)
+  end
 end

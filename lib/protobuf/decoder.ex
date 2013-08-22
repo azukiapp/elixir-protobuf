@@ -10,50 +10,72 @@ defmodule Protobuf.Decoder do
     fixed32: 5
   ]
 
-  def decode(stream, message) when is_atom(message) do
-    decode(stream, message.new)
+  def decode(bytes, message) do
+    decode(bytes, message, false)
   end
 
-  def decode(<<>>, message), do: message
+  def decode(bytes, message, debug) when is_atom(message) do
+    decode(bytes, message.new, debug)
+  end
 
-  def decode(stream, message) do
-    {tag, wire_type, stream} = read_key(stream)
-    {value, stream} = case wire_type do
-      0 -> varint(stream)
-      1 -> read_fixed(8, stream)
-      2 -> read_lenght_delimited(stream)
+  def decode(<<>>, message, _), do: message
+
+  def decode(bytes, message, debug) do
+    {tag, wire_type, bytes} = read_key(bytes)
+    {value, bytes} = case wire_type do
+      0 -> varint(bytes)
+      1 -> read_fixed(8, bytes)
+      2 -> read_lenght_delimited(bytes)
       3 -> raise "Group is deprecated"
       4 -> raise "Group is deprecated"
-      5 -> read_fixed(4, stream)
+      5 -> read_fixed(4, bytes)
     end
-    #IO.inspect({message, value, tag, stream})
-    decode(stream, message.update_by_index(tag, value))
+    if debug do
+      IO.inspect(
+        message: message,
+        tag: tag,
+        wire_type: wire_type,
+        value: value,
+        rest: bytes
+      )
+    end
+    value = decode_field(value, message.defs(:field, tag))
+    decode(bytes, message.update_by_tag(tag, value), debug)
   end
 
-  def read_key(stream) do
-    {bits, stream} = varint(stream)
-    {bits >>> 3, bits &&& 0x07, stream}
+  defp decode_field(data, :field[type: {:enum, _}]) do
+    decode_field(data, :int32)
+  end
+
+  defp decode_field(data, :field[type: type]) do
+    decode_field(data, type)
+  end
+
+  defp decode_field(data, type) do
+    case type do
+      :int32 ->
+        << data :: [signed, size(32)] >> = << data :: 32 >>
+        data
+      _ -> data
+    end
+  end
+
+  def read_key(bytes) do
+    {bits, bytes} = varint(bytes)
+    {bits >>> 3, bits &&& 0x07, bytes}
   end
 
   def varint(bytes) do
-    varint(bytes, 0, 0)
+    :gpb.decode_varint(bytes)
   end
 
-  def varint(<< 1 :: 1, x :: 7, rest :: binary >>, n, acc) do
-    varint(rest, n + 7, acc ||| x <<< n)
-  end
-
-  def varint(<< 0 :: 1, x :: 7, rest :: binary >>, n, acc) do
-    {acc ||| x <<< n, rest}
-  end
-
-  def read_fixed(lenght, stream) do
-    << bytes :: [binary, size(lenght)], rest :: binary >> = stream
+  def read_fixed(lenght, bytes) do
+    << bytes :: [binary, size(lenght)], rest :: binary >> = bytes
     { bytes, rest }
   end
 
-  def read_lenght_delimited(stream) do
-    {lenght, stream} = varint(stream)
-    read_fixed(lenght, stream)
+  def read_lenght_delimited(bytes) do
+    {lenght, bytes} = varint(bytes)
+    read_fixed(lenght, bytes)
   end
 end
