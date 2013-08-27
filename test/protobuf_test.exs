@@ -66,8 +66,8 @@ defmodule ProtobufTest do
       }
     "
 
-    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Version)
-    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Msg.MsgType)
+    assert {:file, 'nofile'} == :code.is_loaded(mod.Version)
+    assert {:file, 'nofile'} == :code.is_loaded(mod.Msg.MsgType)
 
     assert 1 == mod.Version.value(:V0_1)
     assert 1 == mod.Msg.MsgType.value(:START)
@@ -117,5 +117,29 @@ defmodule ProtobufTest do
     "
 
     assert is_record(mod.Msg.new, mod.Msg)
+  end
+
+  test "additional support methods in records" do
+    defmodule Additional do
+      use Protobuf, "message Msg {
+        required uint32 f1 = 1;
+      }"
+
+      extra_block "Msg" do
+        Record.import __MODULE__, as: :r_msg
+
+        def sub(value, r_msg(f1: f1) = msg) do
+          msg.f1(f1 - value)
+        end
+      end
+
+      def soma(value, msg) do
+        __MODULE__.Msg.new(f1: msg.f1 + value)
+      end
+    end
+
+    msg = Additional.Msg.new(f1: 10)
+    assert {Additional.Msg, 5} == msg.sub(5)
+    assert {Additional.Msg, 15} == Additional.soma(5, msg)
   end
 end

@@ -7,15 +7,40 @@ defmodule Protobuf do
   defrecord :field, Record.extract(:field, from_lib: "gpb/include/gpb.hrl")
 
   defmacro __using__(opts) do
-    parse_and_generate(__CALLER__.module, case opts do
+    defs = case opts do
       << string :: binary >> -> string
       from: file ->
         {file, []} = Code.eval_quoted(file, [], __CALLER__)
         File.read!(file)
-    end)
+    end
+
+    quote do
+      import unquote(__MODULE__), only: [extra_block: 2]
+
+      @defs unquote(defs)
+      Module.register_attribute __MODULE__, :extra_body, accumulate: true
+
+      @before_compile unquote(__MODULE__)
+    end
   end
 
-  defp parse_and_generate(ns, define, _opts // []) do
+  defmacro __before_compile__(_env) do
+    module = __CALLER__.module
+    quote do
+      contents = unquote(__MODULE__).parse_and_generate(unquote(module), @defs)
+      Module.eval_quoted __MODULE__, contents
+    end
+  end
+
+  defmacro extra_block(module, do: block) do
+    block  = Macro.escape(block, unquote: true)
+    module = :"#{__CALLER__.module}.#{module}"
+    quote do
+      @extra_body {unquote(module), unquote(block)}
+    end
+  end
+
+  def parse_and_generate(ns, define, _opts // []) do
     msgs = parse!(define)
 
     # Fixing namespaces
@@ -40,7 +65,9 @@ defmodule Protobuf do
   defp message(name, fields) do
     quote do
       main_module = __MODULE__
-      fields = unquote(record_fields(fields))
+      fields      = unquote(record_fields(fields))
+      extra_body  = @extra_body[unquote(name)]
+
       defrecord unquote(name), fields do
         @main_module main_module
 
@@ -62,6 +89,8 @@ defmodule Protobuf do
         def defs(:field, field, _) do
           defs(:field, field)
         end
+
+        Module.eval_quoted(__MODULE__, extra_body, [], __ENV__)
       end
     end
   end
