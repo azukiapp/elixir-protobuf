@@ -28,7 +28,7 @@ defmodule Protobuf do
     module = __CALLER__.module
     quote do
       contents = unquote(__MODULE__).parse_and_generate(unquote(module), @defs)
-      Module.eval_quoted __MODULE__, contents
+      Module.eval_quoted __MODULE__, contents, [], __ENV__
     end
   end
 
