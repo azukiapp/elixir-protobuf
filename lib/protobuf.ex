@@ -15,10 +15,11 @@ defmodule Protobuf do
     end
 
     quote do
-      import unquote(__MODULE__), only: [extra_block: 2]
+      import unquote(__MODULE__), only: [extra_block: 2, use_in: 2]
 
       @defs unquote(defs)
       Module.register_attribute __MODULE__, :extra_body, accumulate: true
+      Module.register_attribute __MODULE__, :use_in, accumulate: true
 
       @before_compile unquote(__MODULE__)
     end
@@ -29,6 +30,14 @@ defmodule Protobuf do
     quote do
       contents = unquote(__MODULE__).parse_and_generate(unquote(module), @defs)
       Module.eval_quoted __MODULE__, contents, [], __ENV__
+    end
+  end
+
+  defmacro use_in(module, use_module) do
+    module = :"#{__CALLER__.module}.#{module}"
+    use_module = quote do: use(unquote(use_module))
+    quote do
+      @use_in {unquote(module), unquote(Macro.escape(use_module)) }
     end
   end
 
@@ -67,6 +76,7 @@ defmodule Protobuf do
       main_module = __MODULE__
       fields      = unquote(record_fields(fields))
       extra_body  = @extra_body[unquote(name)]
+      use_in      = @use_in[unquote(name)]
 
       defrecord unquote(name), fields do
         @main_module main_module
@@ -91,6 +101,10 @@ defmodule Protobuf do
         end
 
         Module.eval_quoted(__MODULE__, extra_body, [], __ENV__)
+
+        if use_in != nil do
+          Module.eval_quoted(__MODULE__, use_in, [{:Msg, Msg}], __ENV__)
+        end
       end
     end
   end

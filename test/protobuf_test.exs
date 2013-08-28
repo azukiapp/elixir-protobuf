@@ -142,4 +142,29 @@ defmodule ProtobufTest do
     assert {Additional.Msg, 5} == msg.sub(5)
     assert {Additional.Msg, 15} == Additional.soma(5, msg)
   end
+
+  test "addiontal method via use_in" do
+    defmodule AddViaHelper do
+      use Protobuf, "message Msg {
+        required uint32 f1 = 1;
+      }"
+
+      defmodule MsgHelper do
+        defmacro __using__(_opts) do
+          quote do
+            Record.import __MODULE__, as: :r_msg
+
+            def sub(value, r_msg(f1: f1) = msg) do
+              msg.f1(f1 - value)
+            end
+          end
+        end
+      end
+
+      use_in :Msg, MsgHelper
+    end
+
+    msg = AddViaHelper.Msg.new(f1: 10)
+    assert {AddViaHelper.Msg, 5} == msg.sub(5)
+  end
 end
