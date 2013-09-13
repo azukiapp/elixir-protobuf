@@ -90,3 +90,7 @@ Messages.Msg[v: :V1]
 Elixir Protobuf source code is released under Apache 2 License.
 
 Check LEGAL and LICENSE files for more information.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/azukiapp/elixir-protobuf/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
