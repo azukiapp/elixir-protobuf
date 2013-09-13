@@ -115,32 +115,7 @@ defmodule ProtobufTest do
         extensions 100 to 200;
       }
     "
-
     assert is_record(mod.Msg.new, mod.Msg)
-  end
-
-  test "additional support methods in records" do
-    defmodule Additional do
-      use Protobuf, "message Msg {
-        required uint32 f1 = 1;
-      }"
-
-      extra_block "Msg" do
-        Record.import __MODULE__, as: :r_msg
-
-        def sub(value, r_msg(f1: f1) = msg) do
-          msg.f1(f1 - value)
-        end
-      end
-
-      def soma(value, msg) do
-        __MODULE__.Msg.new(f1: msg.f1 + value)
-      end
-    end
-
-    msg = Additional.Msg.new(f1: 10)
-    assert {Additional.Msg, 5} == msg.sub(5)
-    assert {Additional.Msg, 15} == Additional.soma(5, msg)
   end
 
   test "addiontal method via use_in" do
