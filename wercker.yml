@@ -1,4 +1,4 @@
-box: nuxlli/elixir@0.0.1
+box: nuxlli/elixir@0.0.2
 build:
   steps:
       - script:
