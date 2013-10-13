@@ -26,7 +26,7 @@ defmodule Protobuf do
   end
 
   defp fix_fields_ns(:msg, fields, ns) do
-    Enum.map(fields, fix_field_ns(&1, ns))
+    Enum.map(fields, &fix_field_ns(&1, ns))
   end
 
   defp fix_fields_ns(_, fields, _) do
