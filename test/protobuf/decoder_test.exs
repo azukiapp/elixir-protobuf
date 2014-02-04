@@ -1,7 +1,6 @@
 defmodule Protobuf.Decoder.Test do
   use Protobuf.Case
   alias Protobuf.Decoder, as: D
-  alias Protobuf.Encoder, as: E
 
   test "fix :undefined values to nil value" do
     mod = def_proto_module "message Msg {
