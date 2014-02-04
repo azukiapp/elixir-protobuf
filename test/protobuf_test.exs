@@ -127,7 +127,7 @@ defmodule ProtobufTest do
       defmodule MsgHelper do
         defmacro __using__(_opts) do
           quote do
-            Record.import __MODULE__, as: :r_msg
+            Record.defmacros(:r_msg, @record_fields, __ENV__, __MODULE__)
 
             def sub(value, r_msg(f1: f1) = msg) do
               msg.f1(f1 - value)
