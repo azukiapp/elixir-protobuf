@@ -1,2 +1,1 @@
-[ "dynamic_compile": {:git, "git://github.com/JacobVorreuter/dynamic_compile.git", "6a165715178dae8ea1c72e6ef171b9fc3435badc", []},
-  "gpb": {:git, "git://github.com/tomas-abrahamsson/gpb.git", "e07d6dae832120ce26276fac30eb79b6d94b0054", []} ]
+[ "gpb": {:git, "git://github.com/tomas-abrahamsson/gpb.git", "9695f186adb15257f48d73b561c662b7ae8aa4c0", []} ]
