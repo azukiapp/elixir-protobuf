@@ -66,8 +66,8 @@ defmodule ProtobufTest do
       }
     "
 
-    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Version)
-    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Msg.MsgType)
+    assert {:file, '#{__ENV__.file}'} == :code.is_loaded(mod.Version)
+    assert {:file, '#{__ENV__.file}'} == :code.is_loaded(mod.Msg.MsgType)
 
     assert 1 == mod.Version.value(:V0_1)
     assert 1 == mod.Msg.MsgType.value(:START)
@@ -127,7 +127,7 @@ defmodule ProtobufTest do
       defmodule MsgHelper do
         defmacro __using__(_opts) do
           quote do
-            Record.import __MODULE__, as: :r_msg
+            Record.defmacros(:r_msg, @record_fields, __ENV__, __MODULE__)
 
             def sub(value, r_msg(f1: f1) = msg) do
               msg.f1(f1 - value)

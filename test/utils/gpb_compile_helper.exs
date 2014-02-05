@@ -29,8 +29,8 @@ defmodule GpbCompileHelper do
   end
 
   def reload do
-    Code.unload_files [__FILE__]
-    Code.require_file __FILE__
+    Code.unload_files [__ENV__.file]
+    Code.require_file __ENV__.file
   end
 
   def unload(module) do
