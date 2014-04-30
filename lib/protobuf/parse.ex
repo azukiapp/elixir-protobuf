@@ -26,7 +26,7 @@ defmodule Protobuf.Parse do
     end
   end
 
-  def parse!(string, options // []) do
+  def parse!(string, options \\ []) do
     case parse(string, options) do
       {:ok, defs} -> defs
       {:error, error} ->

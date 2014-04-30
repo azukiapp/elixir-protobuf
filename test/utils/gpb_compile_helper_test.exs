@@ -1,8 +1,9 @@
 defmodule Protobuf.Test.GpbCompileHelperTest do
   use Protobuf.Case
+  use ExUnit.Case
 
   test "auxiliar compile test function" do
-    Gpb.compile_tmp_proto %S[
+    Gpb.compile_tmp_proto ~S[
         message Msg1 {
           required uint32 field1 = 1;
         }

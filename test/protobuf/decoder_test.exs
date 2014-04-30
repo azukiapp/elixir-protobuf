@@ -1,5 +1,6 @@
 defmodule Protobuf.Decoder.Test do
   use Protobuf.Case
+  use ExUnit.Case
   alias Protobuf.Decoder, as: D
   alias Protobuf.Encoder, as: E
 

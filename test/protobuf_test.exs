@@ -1,5 +1,6 @@
 defmodule ProtobufTest do
   use Protobuf.Case
+  use ExUnit.Case
 
   test "define records in namespace" do
     mod = def_proto_module "
@@ -66,8 +67,8 @@ defmodule ProtobufTest do
       }
     "
 
-    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Version)
-    assert {:file, '#{__FILE__}'} == :code.is_loaded(mod.Msg.MsgType)
+    assert {:file, '#{__ENV__.file}'} == :code.is_loaded(mod.Version)
+    assert {:file, '#{__ENV__.file}'} == :code.is_loaded(mod.Msg.MsgType)
 
     assert 1 == mod.Version.value(:V0_1)
     assert 1 == mod.Msg.MsgType.value(:START)
