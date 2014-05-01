@@ -1,11 +1,11 @@
-Code.require_file "./utils/gpb_compile_helper.exs", __DIR__
+Code.require_file "utils/gpb_compile_helper.exs", __DIR__
 
 ExUnit.start
 
 defmodule Protobuf.Case do
   use ExUnit.CaseTemplate
 
-  using _ do
+  defmacro __using__([]) do
     quote do
       import unquote(__MODULE__)
       alias GpbCompileHelper, as: Gpb
@@ -19,7 +19,7 @@ defmodule Protobuf.Case do
         end
       end
 
-      defp mod_temp(n // 1) do
+      defp mod_temp(n \\ 1) do
         mod_candidate = :"#{__MODULE__}.Test_#{n}"
         case :code.is_loaded(mod_candidate) do
           false -> mod_candidate

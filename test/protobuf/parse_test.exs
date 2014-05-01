@@ -1,5 +1,6 @@
 defmodule Protobuf.Parse.Test do
   use Protobuf.Case
+  use ExUnit.Case
   alias Protobuf.Parse
 
   test "parse string" do

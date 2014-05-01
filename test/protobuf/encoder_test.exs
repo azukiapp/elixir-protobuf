@@ -1,5 +1,6 @@
 defmodule Protobuf.Encoder.Test do
   use Protobuf.Case
+  use ExUnit.Case
   alias Protobuf.Encoder, as: E
 
   setup_all do
